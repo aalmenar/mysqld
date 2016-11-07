@@ -18,17 +18,38 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Attribute that defines whether MariaDB or MySQL should be used
-default['mysqld']['use_mariadb'] = true
+# Attribute that defines whether MariaDB, MySQL or Percona should be used
+default['mysqld']['db_install'] = 'mariadb'
 
 # Default packages to install
-default['mysqld']['mysql_packages'] = %w(mysql-server)
-default['mysqld']['mariadb_packages'] = %w(mariadb-server)
-default['mysqld']['mariadb_galera_packages'] = %w(mariadb-galera-server)
+default['mysqld']['mysql']['packages'] = %w(mysql-server)
+default['mysqld']['mariadb']['packages'] = %w(mariadb-server)
+default['mysqld']['mariadb']['galera_packages'] = %w(mariadb-galera-server)
 
 # MariaDB repository configuration
-default['mysqld']['repository']['version'] = '10.1'
-default['mysqld']['repository']['mirror'] = 'http://ftp.hosteurope.de/mirror/mariadb.org/repo'
+default['mysqld']['repository']['mariadb']['version'] = '10.1'
+default['mysqld']['repository']['mariadb']['mirror'] = 'http://ftp.hosteurope.de/mirror/mariadb.org/repo'
+
+# Percona repository configuration
+default['mysqld']['repository']['percona']['version'] = '5.7'
+default['mysqld']['repository']['percona']['mirror'] = 'http://repo.percona.com/apt'
+
+default['mysqld']['percona']['packages'] = if node['mysqld']['repository']['percona']['version'] == '5.7'
+                                             %w(percona-server-server-5.7)
+                                           elsif node['mysqld']['repository']['percona']['version'] == '5.6'
+                                             %w(percona-server-server-5.6)
+                                           else
+                                             %w(percona-server-server)
+                                           end
+
+default['mysqld']['mysql']['version'] = if node['platform'] == 'debian' && node['platform_version'].to_i < 10
+                                          # At this time, stretch still uses mysql 5.6
+                                          5.6
+                                        elsif node['platform'] == 'ubuntu' && node['platform_version'].to_f < 16.04
+                                          5.6
+                                        else
+                                          5.7
+                                        end
 
 # Configure services
 default['mysqld']['my.cnf_path'] = '/etc/mysql/my.cnf'
@@ -42,7 +63,7 @@ default['mysqld']['root_password'] = nil
 default['mysqld']['auth'] = '--defaults-file=/etc/mysql/debian.cnf'
 
 # Options, only set by default/ available on MariaDB
-if node['mysqld']['use_mariadb']
+if node['mysqld']['db_install'] == 'mariadb'
   # Charset options are only set on MariaDB by default
   default['mysqld']['my.cnf']['client']['default-character-set'] = 'utf8mb4'
   default['mysqld']['my.cnf']['mysql']['default-character-set'] = 'utf8mb4'
@@ -52,6 +73,24 @@ if node['mysqld']['use_mariadb']
 
   # This option is not present on mysql-5.7
   default['mysqld']['my.cnf']['mysqld_safe']['skip_log_error'] = true
+end
+
+# Password columns for user passwords
+case node['mysqld']['db_install']
+when 'mariadb'
+  default['mysqld']['pwd_col'] = 'Password'
+when 'percona'
+  default['mysqld']['pwd_col'] = if node['mysqld']['repository']['percona']['version'] == '5.6'
+                                   'Password'
+                                 else
+                                   'authentication_string'
+                                 end
+when 'mysql'
+  default['mysqld']['pwd_col'] = if node['mysqld']['mysql']['version'] < 5.7
+                                   'Password'
+                                 else
+                                   'authentication_string'
+                                 end
 end
 
 default['mysqld']['my.cnf']['mysqld']['user'] = 'mysql'

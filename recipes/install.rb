@@ -18,9 +18,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# This way we force to have updated indexes
+include_recipe 'apt'
+
 # Install packages
-if node['mysqld']['use_mariadb']
-  Array(node['mysqld']['mariadb_packages']).each { |pkg| package pkg }
+case node['mysqld']['db_install']
+when 'mariadb'
+  Array(node['mysqld']['mariadb']['packages']).each { |pkg| package pkg }
+when 'percona'
+  Array(node['mysqld']['percona']['packages']).each { |pkg| package pkg }
 else
-  Array(node['mysqld']['mysql_packages']).each { |pkg| package pkg }
+  Array(node['mysqld']['mysql']['packages']).each { |pkg| package pkg }
 end
