@@ -24,8 +24,10 @@ include_recipe 'apt'
 # Install packages
 case node['mysqld']['db_install']
 when 'mariadb'
+  include_recipe 'mysqld::mariadb_repository'  
   Array(node['mysqld']['mariadb']['packages']).each { |pkg| package pkg }
 when 'percona'
+  include_recipe 'mysqld::percona_repository'  
   Array(node['mysqld']['percona']['packages']).each { |pkg| package pkg }
 else
   Array(node['mysqld']['mysql']['packages']).each { |pkg| package pkg }

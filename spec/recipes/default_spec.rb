@@ -7,6 +7,12 @@ describe 'mysqld::default' do
     ChefSpec::SoloRunner.new(platform: 'ubuntu', version: '12.04').converge(described_recipe)
   end
 
+  let(:debian_jessie) do
+    runner = ChefSpec::SoloRunner.new(platform: 'debian', version: '8.4').converge(described_recipe)
+    runner.node.override['mysqld']['db_install'] = 'mysql'
+    runner.converge(described_recipe)
+  end
+
   let(:ubuntu_1604) do
     runner = ChefSpec::SoloRunner.new(platform: 'ubuntu', version: '16.04')
     runner.node.override['mysqld']['db_install'] = 'mysql'
@@ -15,34 +21,41 @@ describe 'mysqld::default' do
 
   it 'should use the correct mysql server package' do
     expect(debian.node['mysqld']['mysql']['packages']).to eq(%w(mysql-server))
+    expect(debian_jessie.node['mysqld']['mysql']['packages']).to eq(%w(mysql-server))
     expect(ubuntu_1604.node['mysqld']['mysql']['packages']).to eq(%w(mysql-server))
   end
 
   it 'should use distribution specific my.cnf path' do
     expect(debian.node['mysqld']['my.cnf_path']).to eq('/etc/mysql/my.cnf')
+    expect(debian_jessie.node['mysqld']['my.cnf_path']).to eq('/etc/mysql/my.cnf')
     expect(ubuntu_1604.node['mysqld']['my.cnf_path']).to eq('/etc/mysql/my.cnf')
   end
 
   it 'should use distribution specific service name' do
     expect(debian.node['mysqld']['service_name']).to eq('mysql')
+    expect(debian_jessie.node['mysqld']['service_name']).to eq('mysql')
     expect(ubuntu_1604.node['mysqld']['service_name']).to eq('mysql')
   end
 
   it 'should run mysqld_default provider' do
     expect(debian).to create_mysqld
+    expect(debian_jessie).to create_mysqld
     expect(ubuntu_1604).to create_mysqld
   end
 
   it 'should use distribution and version specific attributes' do
     expect(ubuntu_1604.node['mysqld']['my.cnf']['mysqld']['key_buffer_size']).to eq('16M')
     expect(debian.node['mysqld']['my.cnf']['mysqld']['key_buffer_size']).to eq('16M')
+    expect(debian_jessie.node['mysqld']['my.cnf']['mysqld']['key_buffer_size']).to eq('16M')
 
     expect(ubuntu_1604.node['mysqld']['my.cnf']['mysqld']['myisam-recover-options']).to eq('BACKUP')
     expect(debian.node['mysqld']['my.cnf']['mysqld']['myisam-recover-options']).to eq('BACKUP')
+    expect(debian_jessie.node['mysqld']['my.cnf']['mysqld']['myisam-recover-options']).to eq('BACKUP')
   end
 
   it 'should use the correct password column' do
     expect(ubuntu_1604.node['mysqld']['pwd_col']).to eq('authentication_string')
     expect(debian.node['mysqld']['pwd_col']).to eq('Password')
+    expect(debian_jessie.node['mysqld']['pwd_col']).to eq('Password')
   end
 end
