@@ -86,7 +86,7 @@ when 'percona'
                                    'authentication_string'
                                  end
 when 'mysql'
-  default['mysqld']['pwd_col'] = if node['mysqld']['mysql']['version'] < 5.7
+  default['mysqld']['pwd_col'] = if node['mysqld']['mysql']['version'].to_f < 5.7
                                    'Password'
                                  else
                                    'authentication_string'
